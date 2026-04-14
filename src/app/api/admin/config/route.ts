@@ -15,9 +15,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden — Admin only' }, { status: 403 });
     }
 
-    const configs = await db.aIConfig.findMany({
+    let configs = await db.aIConfig.findMany({
       orderBy: { key: 'asc' },
     });
+
+    // Ensure default config rows exist (Vercel deploys won't run local seed scripts).
+    if (configs.length === 0) {
+      const defaults: Array<{ key: string; value: string }> = [
+        { key: 'AI_PROVIDER', value: 'BUILTIN' },
+        { key: 'GROQ_API_KEY', value: '' },
+        { key: 'OLLAMA_BASE_URL', value: 'http://localhost:11434' },
+        { key: 'MODEL_NAME', value: '' },
+        { key: 'PAYMENT_MODE', value: 'SUBSCRIPTION' },
+        { key: 'PAYFAST_MERCHANT_ID', value: '' },
+        { key: 'PAYFAST_MERCHANT_KEY', value: '' },
+        { key: 'PAYFAST_PASSPHRASE', value: '' },
+        { key: 'PAYFAST_BASE_URL', value: 'https://sandbox.payfast.co.za' },
+        { key: 'BLUEPRINT_PRICE_PER', value: '97' },
+        { key: 'PAYPAL_CLIENT_ID', value: '' },
+        { key: 'PAYPAL_SECRET', value: '' },
+      ];
+
+      await db.aIConfig.createMany({ data: defaults, skipDuplicates: true });
+      configs = await db.aIConfig.findMany({ orderBy: { key: 'asc' } });
+    }
 
     return NextResponse.json({ configs });
   } catch (error: unknown) {
