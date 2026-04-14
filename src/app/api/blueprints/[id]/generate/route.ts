@@ -15,7 +15,9 @@ export async function POST(
     }
 
     const userRole = (session.user as { role: string }).role;
-    const sessionUserId = (session.user as { id: string }).id;
+    if (userRole !== 'ADMIN' && userRole !== 'STAFF') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { id } = await params;
 
@@ -25,15 +27,6 @@ export async function POST(
     });
     if (!blueprint) {
       return NextResponse.json({ error: 'Blueprint not found' }, { status: 404 });
-    }
-
-    const canGenerate =
-      userRole === 'ADMIN' ||
-      userRole === 'STAFF' ||
-      blueprint.userId === sessionUserId;
-
-    if (!canGenerate) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Check payment mode — if SUBSCRIPTION, verify user has allowance
@@ -97,7 +90,7 @@ export async function POST(
       // Generate blueprint content using AI
       const content = await generateBlueprint(blueprint.idea, blueprint.title);
 
-      // Update with generated content
+      // Update with generated content — keep as GENERATED for admin review
       const updated = await db.blueprint.update({
         where: { id },
         data: {

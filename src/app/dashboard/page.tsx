@@ -118,7 +118,6 @@ export default function UserDashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   // Modal
   const [viewBp, setViewBp] = useState<Blueprint | null>(null);
@@ -316,26 +315,6 @@ export default function UserDashboard() {
     }
   };
 
-  const handleGenerate = async (bp: Blueprint) => {
-    setGeneratingId(bp.id);
-    try {
-      const res = await fetch(`/api/blueprints/${bp.id}/generate`, { method: 'POST' });
-      const data = await res.json();
-      if (res.ok) {
-        setBlueprints((prev) => prev.map((x) => (x.id === bp.id ? { ...x, ...data.blueprint } : x)));
-        setSubmitSuccess('Blueprint generated. Open it to view.');
-        setSubmitError('');
-      } else {
-        setSubmitError(data.error || 'Generation failed.');
-        setSubmitSuccess('');
-      }
-    } catch {
-      setSubmitError('Network error. Please try again.');
-      setSubmitSuccess('');
-    } finally {
-      setGeneratingId(null);
-    }
-  };
 
   const scrollToSubscription = () => {
     document.getElementById('subscription-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -730,24 +709,7 @@ export default function UserDashboard() {
                       }}>
                         {new Date(bp.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
-                      {bp.status === 'PENDING' && (
-                        <button
-                          onClick={() => handleGenerate(bp)}
-                          disabled={generatingId === bp.id}
-                          style={{
-                            padding: '7px 14px', background: 'rgba(201,168,76,0.08)',
-                            border: '1px solid rgba(201,168,76,0.3)',
-                            fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em',
-                            color: COLORS.gold, textTransform: 'uppercase',
-                            cursor: generatingId === bp.id ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s',
-                            opacity: generatingId === bp.id ? 0.6 : 1,
-                          }}
-                        >
-                          {generatingId === bp.id ? 'Generating…' : 'Generate'}
-                        </button>
-                      )}
-                      {(bp.status === 'GENERATED' || bp.status === 'APPROVED') && bp.content && (
+                      {bp.status === 'APPROVED' && bp.content && (
                         <button
                           onClick={() => setViewBp(bp)}
                           style={{
