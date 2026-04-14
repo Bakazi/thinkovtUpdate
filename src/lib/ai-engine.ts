@@ -13,7 +13,7 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
   }
 
   const aiProvider = configMap['AI_PROVIDER'] || 'BUILTIN';
-  const groqKey = configMap['GROQ_API_KEY'];
+  const groqKey = configMap['GROQ_API_KEY'] || process.env.GROQ_API_KEY || '';
   const ollamaUrl = configMap['OLLAMA_BASE_URL'];
   const modelName = configMap['MODEL_NAME'] || '';
 
@@ -155,7 +155,7 @@ export async function testAIConnection(): Promise<{ success: boolean; message: s
   }
 
   // Test Groq
-  const groqKey = configMap['GROQ_API_KEY'];
+  const groqKey = configMap['GROQ_API_KEY'] || process.env.GROQ_API_KEY || '';
   if (groqKey) {
     try {
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
