@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  password      String?
+  role          String   @default("USER")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  blueprints    Blueprint[]
+  auditSubmissions AuditSubmission[]
+  subscription  Subscription?
+  payments      Payment[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Blueprint {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  title           String
+  idea            String
+  status          String   @default("PENDING")
+  content         String?
+  rejectionReason String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  paymentRequired Boolean  @default(true)
+  paymentId       String?  @unique
+  payment         Payment?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AuditSubmission {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  email         String
+  plan          String
+  result        String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AIConfig {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         String
+  updatedAt     DateTime @updatedAt
+}
+
+model PaymentTier {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  slug          String   @unique
+  price         Float    @default(0)
+  currency      String   @default("ZAR")
+  maxBlueprints Int      @default(1)
+  features      String   @default("[]")
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  tierId        String?
+  tier          PaymentTier? @relation(fields: [tierId], references: [id])
+  status        String   @default("NONE")
+  startedAt     DateTime @default(now())
+  expiresAt     DateTime?
+  payfastToken  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  blueprintId   String?  @unique
+  blueprint     Blueprint? @relation(fields: [blueprintId], references: [id])
+  amount        Float
+  currency      String   @default("ZAR")
+  method        String   @default("PAYFAST")
+  status        String   @default("PENDING")
+  reference     String?
+  payfastToken  String?
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AgentPrompt {
+  id          String   @id @default(cuid())
+  agentName   String
+  description String?
+  systemPrompt String
+  isActive    Boolean  @default(true)
+  tools       String   @default("[]")
+  modelConfig String   @default("{}")
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
