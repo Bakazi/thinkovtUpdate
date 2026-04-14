@@ -132,7 +132,9 @@ export default function UserDashboard() {
 
   const currentTier = subscription?.tier || null;
   const tiers = subscription?.allTiers || DEFAULT_TIERS;
+  // Count only "delivered" blueprints (match backend enforcement in /api/blueprints/[id]/generate).
   const bpCountThisMonth = subscription?.blueprintCountThisMonth || blueprints.filter((bp) => {
+    if (!['GENERATED', 'APPROVED'].includes(bp.status)) return false;
     const d = new Date(bp.createdAt);
     const now = new Date();
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
