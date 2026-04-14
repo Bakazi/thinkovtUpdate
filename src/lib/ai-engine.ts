@@ -1,9 +1,23 @@
 import { db } from '@/lib/db';
 
-const BLUEPRINT_SYSTEM_PROMPT = `You are Thinkovr — Think Over Everything. Generate a comprehensive, actionable blueprint based on the user's idea. 
-The blueprint should include: 1) Executive Summary, 2) Key Constraints Analysis, 3) Step-by-step Execution Plan, 
+const DEFAULT_BLUEPRINT_SYSTEM_PROMPT = `You are Thinkovr — Think Over Everything. Generate a comprehensive, actionable blueprint based on the user's idea.
+The blueprint should include: 1) Executive Summary, 2) Key Constraints Analysis, 3) Step-by-step Execution Plan,
 4) Risk Assessment, 5) KPIs and Milestones, 6) Resource Requirements, 7) Timeline.
 Be direct, precise, and actionable. No fluff. This is a directive, not advice.`;
+
+const DEFAULT_ENGINE_SKILLS = `- Apply the Five Filters: Capital, Time, Skill leverage, Geo-economic fit, Fear-failure alignment.
+- Be specific: name the first 3 actions the user must do within 72 hours.
+- Force constraints: if inputs are vague, make explicit assumptions and label them.`;
+
+const DEFAULT_AUDIT_SYSTEM_PROMPT = `You are Thinkovr — Think Over Everything — a ruthless, precise strategic auditor.
+A user has submitted their business/career plan for a free audit.
+Your job: identify the SINGLE BIGGEST FLAW in their logic that could cause failure.
+Be direct, specific, and constructive. No fluff. No validation. Just the truth.
+Format your response as:
+1. THE VERDICT: [One sentence summary of the fatal flaw]
+2. THE EVIDENCE: [2-3 sentences explaining WHY this will fail, with specific logic]
+3. THE FIX: [1-2 actionable steps to address this flaw]
+Keep it under 200 words. Be brutal but useful.`;
 
 export async function generateBlueprint(idea: string, title: string): Promise<string> {
   const configs = await db.aIConfig.findMany();
@@ -11,6 +25,11 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
   for (const c of configs) {
     configMap[c.key] = c.value;
   }
+
+  const blueprintSystemPrompt =
+    configMap['BLUEPRINT_SYSTEM_PROMPT'] || DEFAULT_BLUEPRINT_SYSTEM_PROMPT;
+  const engineSkills = configMap['ENGINE_SKILLS'] || DEFAULT_ENGINE_SKILLS;
+  const systemPrompt = `${blueprintSystemPrompt}\n\n[ENGINE SKILLS]\n${engineSkills}`;
 
   const aiProvider = (configMap['AI_PROVIDER'] || 'AUTO').toUpperCase();
 
@@ -37,7 +56,7 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
     if (provider === 'GEMINI') {
       for (const key of geminiKeys) {
         try {
-          return await generateWithGemini(key, geminiModel, userPrompt);
+          return await generateWithGemini(key, geminiModel, systemPrompt, userPrompt);
         } catch (err) {
           console.error('Gemini failed:', err);
         }
@@ -48,7 +67,7 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
     if (provider === 'GROQ') {
       for (const key of groqKeys) {
         try {
-          return await generateWithGroq(key, userPrompt, groqModel);
+          return await generateWithGroq(key, systemPrompt, userPrompt, groqModel);
         } catch (err) {
           console.error('Groq failed:', err);
         }
@@ -58,7 +77,7 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
     // Ollama
     if (provider === 'OLLAMA' && ollamaUrl) {
       try {
-        return await generateWithOllama(ollamaUrl, userPrompt, ollamaModel);
+        return await generateWithOllama(ollamaUrl, systemPrompt, userPrompt, ollamaModel);
       } catch (err) {
         console.error('Ollama failed:', err);
       }
@@ -67,7 +86,7 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
     // Built-in (requires .z-ai-config file; typically not available on Vercel)
     if (provider === 'BUILTIN') {
       try {
-        return await generateWithBuiltin(userPrompt);
+        return await generateWithBuiltin(systemPrompt, userPrompt);
       } catch (err) {
         console.error('Built-in failed:', err);
       }
@@ -84,7 +103,7 @@ function splitKeys(raw: string): string[] {
     .filter(Boolean);
 }
 
-async function generateWithGemini(apiKey: string, model: string, userPrompt: string): Promise<string> {
+async function generateWithGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
   // Google AI Studio (Gemini) REST API
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
@@ -97,7 +116,7 @@ async function generateWithGemini(apiKey: string, model: string, userPrompt: str
       contents: [
         {
           role: 'user',
-          parts: [{ text: `${BLUEPRINT_SYSTEM_PROMPT}\n\n${userPrompt}` }],
+          parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
         },
       ],
       generationConfig: {
@@ -157,13 +176,13 @@ export async function generateBlueprintLegacy(idea: string, title: string): Prom
   throw new Error('All AI providers failed. Please contact support.');
 }
 
-async function generateWithBuiltin(userPrompt: string): Promise<string> {
+async function generateWithBuiltin(systemPrompt: string, userPrompt: string): Promise<string> {
   const ZAI = await import('z-ai-web-dev-sdk').then((m) => m.default || m);
   const zai = await ZAI.create();
 
   const completion = await zai.chat.completions.create({
     messages: [
-      { role: 'system', content: BLUEPRINT_SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     temperature: 0.7,
@@ -177,7 +196,7 @@ async function generateWithBuiltin(userPrompt: string): Promise<string> {
   return content;
 }
 
-async function generateWithGroq(apiKey: string, userPrompt: string, modelName: string): Promise<string> {
+async function generateWithGroq(apiKey: string, systemPrompt: string, userPrompt: string, modelName: string): Promise<string> {
   const model = modelName || 'llama-3.3-70b-versatile';
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -189,7 +208,7 @@ async function generateWithGroq(apiKey: string, userPrompt: string, modelName: s
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: BLUEPRINT_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
@@ -206,11 +225,11 @@ async function generateWithGroq(apiKey: string, userPrompt: string, modelName: s
   return data.choices?.[0]?.message?.content || 'No content generated.';
 }
 
-async function generateWithOllama(baseUrl: string, userPrompt: string, modelName: string): Promise<string> {
+async function generateWithOllama(baseUrl: string, systemPrompt: string, userPrompt: string, modelName: string): Promise<string> {
   const model = modelName || 'llama3';
   const url = baseUrl.replace(/\/$/, '');
 
-  const fullPrompt = `${BLUEPRINT_SYSTEM_PROMPT}\n\n${userPrompt}`;
+  const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
   const response = await fetch(`${url}/api/generate`, {
     method: 'POST',
@@ -336,19 +355,16 @@ export async function generateAuditResponse(email: string, plan: string): Promis
   const ZAI = await import('z-ai-web-dev-sdk').then((m) => m.default || m);
   const zai = await ZAI.create();
 
+  const configs = await db.aIConfig.findMany();
+  const configMap: Record<string, string> = {};
+  for (const c of configs) configMap[c.key] = c.value;
+  const auditSystemPrompt = configMap['AUDIT_SYSTEM_PROMPT'] || DEFAULT_AUDIT_SYSTEM_PROMPT;
+
   const completion = await zai.chat.completions.create({
     messages: [
       {
         role: 'system',
-        content: `You are Thinkovr — Think Over Everything — a ruthless, precise strategic auditor.
-A user has submitted their business/career plan for a free audit.
-Your job: identify the SINGLE BIGGEST FLAW in their logic that could cause failure.
-Be direct, specific, and constructive. No fluff. No validation. Just the truth.
-Format your response as:
-1. THE VERDICT: [One sentence summary of the fatal flaw]
-2. THE EVIDENCE: [2-3 sentences explaining WHY this will fail, with specific logic]
-3. THE FIX: [1-2 actionable steps to address this flaw]
-Keep it under 200 words. Be brutal but useful.`,
+        content: auditSystemPrompt,
       },
       {
         role: 'user',

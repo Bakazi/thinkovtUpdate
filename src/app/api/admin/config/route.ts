@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
     // We always backfill missing keys, but never overwrite existing values.
     const defaults: Array<{ key: string; value: string }> = [
       { key: 'AI_PROVIDER', value: 'AUTO' },
+      // Engine prompts/skills
+      { key: 'BLUEPRINT_SYSTEM_PROMPT', value: '' },
+      { key: 'ENGINE_SKILLS', value: '' },
+      { key: 'AUDIT_SYSTEM_PROMPT', value: '' },
       // Gemini (default in AUTO)
       { key: 'GEMINI_API_KEYS', value: '' },
       { key: 'GEMINI_MODEL', value: 'gemini-1.5-flash' },

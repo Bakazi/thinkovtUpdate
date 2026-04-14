@@ -1019,6 +1019,9 @@ export default function AdminDashboard() {
               {configs
                 .filter((c) => [
                   'AI_PROVIDER',
+                  'BLUEPRINT_SYSTEM_PROMPT',
+                  'ENGINE_SKILLS',
+                  'AUDIT_SYSTEM_PROMPT',
                   'GEMINI_API_KEYS',
                   'GEMINI_MODEL',
                   'GROQ_API_KEYS',
@@ -1065,6 +1068,31 @@ export default function AdminDashboard() {
                           <option value="GROQ">GROQ</option>
                           <option value="OLLAMA">OLLAMA</option>
                         </select>
+                      ) : ['BLUEPRINT_SYSTEM_PROMPT', 'ENGINE_SKILLS', 'AUDIT_SYSTEM_PROMPT'].includes(config.key) ? (
+                        <textarea
+                          value={editConfigs[config.key] || ''}
+                          onChange={(e) => setEditConfigs((prev) => ({ ...prev, [config.key]: e.target.value }))}
+                          rows={config.key === 'ENGINE_SKILLS' ? 6 : 10}
+                          style={{
+                            flex: 1,
+                            background: 'rgba(240,234,214,0.04)',
+                            border: `1px solid ${BORDER_LIGHT}`,
+                            color: CREAM,
+                            padding: '10px 14px',
+                            fontFamily: FONT_MONO,
+                            fontSize: '0.7rem',
+                            outline: 'none',
+                            resize: 'vertical',
+                            lineHeight: 1.6,
+                          }}
+                          placeholder={
+                            config.key === 'BLUEPRINT_SYSTEM_PROMPT'
+                              ? 'System prompt for blueprint generation...'
+                              : config.key === 'AUDIT_SYSTEM_PROMPT'
+                                ? 'System prompt for free audit responses...'
+                                : '- Skill/rule 1\n- Skill/rule 2\n- Skill/rule 3'
+                          }
+                        />
                       ) : (
                         <input
                           type={config.key.includes('KEY') ? 'password' : 'text'}
@@ -1109,6 +1137,9 @@ export default function AdminDashboard() {
                     </div>
                     <p style={{ fontFamily: FONT_MONO, fontSize: '0.45rem', color: DIM, marginTop: 6, letterSpacing: '0.05em' }}>
                       {config.key === 'AI_PROVIDER' ? 'AUTO will try Gemini first, then Groq, then Ollama.' :
+                       config.key === 'BLUEPRINT_SYSTEM_PROMPT' ? 'Controls how the Engine writes blueprints.' :
+                       config.key === 'ENGINE_SKILLS' ? 'Reusable rules/skills appended to the Engine prompt.' :
+                       config.key === 'AUDIT_SYSTEM_PROMPT' ? 'Controls how the Engine writes free audits.' :
                        config.key === 'GEMINI_API_KEYS' ? 'Gemini keys (free tier possible). Paste multiple keys separated by commas/newlines for failover.' :
                        config.key === 'GEMINI_MODEL' ? 'Gemini model id (e.g. gemini-1.5-flash).' :
                        config.key === 'GROQ_API_KEYS' ? 'Groq keys. Paste multiple keys separated by commas/newlines for failover.' :
