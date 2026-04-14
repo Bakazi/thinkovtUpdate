@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, role } = body;
+    const { name, email, password } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -14,8 +14,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     const existingUser = await db.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -27,12 +29,15 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Never trust client-provided roles. Assign role server-side.
+    const role = normalizedEmail === 'admin@thinkovr.com' ? 'ADMIN' : 'USER';
+
     const user = await db.user.create({
       data: {
         name: name || null,
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
-        role: role || 'USER',
+        role,
       },
     });
 
