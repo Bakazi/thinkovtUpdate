@@ -142,7 +142,15 @@ export async function testAIConnection(): Promise<{ success: boolean; message: s
       });
       return { success: true, message: 'Built-in AI (free) — connected and ready.' };
     } catch (err) {
-      return { success: false, message: `Built-in AI error: ${err instanceof Error ? err.message : 'Unknown'}` };
+      const msg = err instanceof Error ? err.message : 'Unknown';
+      if (msg.toLowerCase().includes('configuration file not found')) {
+        return {
+          success: false,
+          message:
+            'BUILTIN is not configured on Vercel. Switch AI_PROVIDER to GROQ and set GROQ_API_KEY, or use OLLAMA locally.',
+        };
+      }
+      return { success: false, message: `Built-in AI error: ${msg}` };
     }
   }
 

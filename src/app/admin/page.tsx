@@ -1017,7 +1017,7 @@ export default function AdminDashboard() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {configs
-                .filter((c) => ['GROQ_API_KEY', 'OLLAMA_BASE_URL', 'MODEL_NAME'].includes(c.key))
+                .filter((c) => ['AI_PROVIDER', 'GROQ_API_KEY', 'OLLAMA_BASE_URL', 'MODEL_NAME'].includes(c.key))
                 .map((config) => (
                   <div key={config.key} style={{
                     border: `1px solid ${BORDER}`,
@@ -1036,26 +1036,47 @@ export default function AdminDashboard() {
                       {config.key.replace(/_/g, ' ')}
                     </label>
                     <div style={{ display: 'flex', gap: 12 }}>
-                      <input
-                        type={config.key.includes('KEY') ? 'password' : 'text'}
-                        value={editConfigs[config.key] || ''}
-                        onChange={(e) => setEditConfigs((prev) => ({ ...prev, [config.key]: e.target.value }))}
-                        style={{
-                          flex: 1,
-                          background: 'rgba(240,234,214,0.04)',
-                          border: `1px solid ${BORDER_LIGHT}`,
-                          color: CREAM,
-                          padding: '10px 14px',
-                          fontFamily: FONT_MONO,
-                          fontSize: '0.7rem',
-                          outline: 'none',
-                        }}
-                        placeholder={
-                          config.key === 'GROQ_API_KEY' ? 'gsk_...' :
-                          config.key === 'OLLAMA_BASE_URL' ? 'http://localhost:11434' :
-                          'llama-3.3-70b-versatile'
-                        }
-                      />
+                      {config.key === 'AI_PROVIDER' ? (
+                        <select
+                          value={editConfigs[config.key] || 'BUILTIN'}
+                          onChange={(e) => setEditConfigs((prev) => ({ ...prev, [config.key]: e.target.value }))}
+                          style={{
+                            flex: 1,
+                            background: 'rgba(240,234,214,0.04)',
+                            border: `1px solid ${BORDER_LIGHT}`,
+                            color: CREAM,
+                            padding: '10px 14px',
+                            fontFamily: FONT_MONO,
+                            fontSize: '0.7rem',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="BUILTIN">BUILTIN</option>
+                          <option value="GROQ">GROQ</option>
+                          <option value="OLLAMA">OLLAMA</option>
+                        </select>
+                      ) : (
+                        <input
+                          type={config.key.includes('KEY') ? 'password' : 'text'}
+                          value={editConfigs[config.key] || ''}
+                          onChange={(e) => setEditConfigs((prev) => ({ ...prev, [config.key]: e.target.value }))}
+                          style={{
+                            flex: 1,
+                            background: 'rgba(240,234,214,0.04)',
+                            border: `1px solid ${BORDER_LIGHT}`,
+                            color: CREAM,
+                            padding: '10px 14px',
+                            fontFamily: FONT_MONO,
+                            fontSize: '0.7rem',
+                            outline: 'none',
+                          }}
+                          placeholder={
+                            config.key === 'GROQ_API_KEY' ? 'gsk_...' :
+                            config.key === 'OLLAMA_BASE_URL' ? 'http://localhost:11434' :
+                            'llama-3.3-70b-versatile'
+                          }
+                        />
+                      )}
                       <button
                         onClick={() => handleSaveConfig(config.key)}
                         style={{
@@ -1074,7 +1095,8 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     <p style={{ fontFamily: FONT_MONO, fontSize: '0.45rem', color: DIM, marginTop: 6, letterSpacing: '0.05em' }}>
-                      {config.key === 'GROQ_API_KEY' ? 'Default AI provider. Get your key at console.groq.com' :
+                      {config.key === 'AI_PROVIDER' ? 'Select which AI backend to use (BUILTIN / GROQ / OLLAMA).' :
+                       config.key === 'GROQ_API_KEY' ? 'Groq provider key. Get one at console.groq.com' :
                        config.key === 'OLLAMA_BASE_URL' ? 'Local AI fallback. Ensure Ollama is running' :
                        'Optional: Override the default model name'}
                     </p>
