@@ -639,7 +639,7 @@ export default function AdminDashboard() {
         <div style={{ padding: '0 24px', marginBottom: 40 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: '0.85rem', letterSpacing: '0.22em', color: GOLD, textTransform: 'uppercase' }}>
-              Thinkovr
+              Thinkovr Verum Engine
             </h2>
             <p style={{ fontFamily: FONT_MONO, fontSize: '0.48rem', letterSpacing: '0.22em', color: DIM, textTransform: 'uppercase', marginTop: 4 }}>
               Admin Panel
@@ -737,7 +737,7 @@ export default function AdminDashboard() {
               Admin Dashboard
             </h1>
             <p style={{ fontFamily: FONT_MONO, fontSize: '0.55rem', color: DIM, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>
-              Thinkovr Control Center
+              Thinkovr Verum Engine — Control Center
             </p>
           </div>
           <button

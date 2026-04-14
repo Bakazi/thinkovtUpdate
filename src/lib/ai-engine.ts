@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 
-const DEFAULT_BLUEPRINT_SYSTEM_PROMPT = `You are Thinkovr — Think Over Everything. Generate a comprehensive, actionable blueprint based on the user's idea.
+const DEFAULT_BLUEPRINT_SYSTEM_PROMPT = `You are the Thinkovr Verum Engine — Think Over Everything. Generate a comprehensive, actionable blueprint based on the user's idea.
 The blueprint should include: 1) Executive Summary, 2) Key Constraints Analysis, 3) Step-by-step Execution Plan,
 4) Risk Assessment, 5) KPIs and Milestones, 6) Resource Requirements, 7) Timeline.
 Be direct, precise, and actionable. No fluff. This is a directive, not advice.`;
@@ -9,7 +9,7 @@ const DEFAULT_ENGINE_SKILLS = `- Apply the Five Filters: Capital, Time, Skill le
 - Be specific: name the first 3 actions the user must do within 72 hours.
 - Force constraints: if inputs are vague, make explicit assumptions and label them.`;
 
-const DEFAULT_AUDIT_SYSTEM_PROMPT = `You are Thinkovr — Think Over Everything — a ruthless, precise strategic auditor.
+const DEFAULT_AUDIT_SYSTEM_PROMPT = `You are the Thinkovr Verum Engine — Think Over Everything — a ruthless, precise strategic auditor.
 A user has submitted their business/career plan for a free audit.
 Your job: identify the SINGLE BIGGEST FLAW in their logic that could cause failure.
 Be direct, specific, and constructive. No fluff. No validation. Just the truth.
@@ -44,7 +44,7 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
   const ollamaUrl = configMap['OLLAMA_BASE_URL'] || '';
   const ollamaModel = configMap['OLLAMA_MODEL'] || 'llama3';
 
-  const userPrompt = `Generate a comprehensive blueprint for the following idea:\n\nTitle: ${title}\n\nIdea/Description: ${idea}\n\nProvide a complete, actionable blueprint following the Thinkovr format.`;
+  const userPrompt = `Generate a comprehensive blueprint for the following idea:\n\nTitle: ${title}\n\nIdea/Description: ${idea}\n\nProvide a complete, actionable blueprint following the Thinkovr Verum Engine format.`;
 
   const orderedProviders =
     aiProvider === 'AUTO'
@@ -221,7 +221,7 @@ export async function generateBlueprintLegacy(idea: string, title: string): Prom
   const ollamaUrl = configMap['OLLAMA_BASE_URL'];
   const modelName = configMap['MODEL_NAME'] || '';
 
-  const userPrompt = `Generate a comprehensive blueprint for the following idea:\n\nTitle: ${title}\n\nIdea/Description: ${idea}\n\nProvide a complete, actionable blueprint following the Thinkovr format.`;
+  const userPrompt = `Generate a comprehensive blueprint for the following idea:\n\nTitle: ${title}\n\nIdea/Description: ${idea}\n\nProvide a complete, actionable blueprint following the Thinkovr Verum Engine format.`;
 
   if (aiProvider === 'BUILTIN' || (!groqKey && !ollamaUrl)) {
     try {

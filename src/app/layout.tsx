@@ -27,15 +27,25 @@ const courier = Courier_Prime({
 });
 
 export const metadata: Metadata = {
-  title: "Thinkovr — Think Over Everything",
-  description: "We don't give you options. We give you the right move. Thinkovr processes your parameters and delivers the singular right move.",
-  keywords: ["Thinkovr", "Think Over Everything", "decision making", "business strategy", "clarity", "directives"],
+  title: "Thinkovr Verum Engine — Think Over Everything",
+  description:
+    "Thinkovr Verum Engine: we don't give you options. We give you the right move. Thinkovr processes your parameters and delivers the singular right move.",
+  keywords: [
+    "Thinkovr Verum Engine",
+    "Thinkovr",
+    "Think Over Everything",
+    "decision making",
+    "business strategy",
+    "clarity",
+    "directives",
+  ],
   icons: {
     icon: "/logo.svg",
   },
   openGraph: {
-    title: "Thinkovr — Think Over Everything",
-    description: "We don't give you options. We give you the right move.",
+    title: "Thinkovr Verum Engine — Think Over Everything",
+    description:
+      "Thinkovr Verum Engine: we don't give you options. We give you the right move.",
     type: "website",
   },
 };

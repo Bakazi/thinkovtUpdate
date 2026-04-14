@@ -269,7 +269,7 @@ export default function BespokePage() {
         <div className="bespoke-preloader-bar-wrap">
           <div className="bespoke-preloader-bar" />
         </div>
-        <div className="bespoke-preloader-tagline">Initialising Thinkovr...</div>
+        <div className="bespoke-preloader-tagline">Initialising Thinkovr Verum Engine...</div>
       </div>
 
       {/* ═══ MOBILE NAV ═══ */}
@@ -291,7 +291,7 @@ export default function BespokePage() {
       <nav className={`bespoke-nav ${navScrolled ? 'bespoke-scrolled' : ''}`}>
         <a href="#hero" className="bespoke-nav-logo">
           <span className="bespoke-nav-logo-main">Thinkovr</span>
-          <span className="bespoke-nav-logo-sub">Thinkovr</span>
+          <span className="bespoke-nav-logo-sub">Verum Engine</span>
         </a>
         <ul className="bespoke-nav-links" style={{ display: '' }}>
           {navLinks.map((l) => (
@@ -337,7 +337,7 @@ export default function BespokePage() {
         <div className="bespoke-hero-orb bespoke-hero-orb-2" />
         <div className="bespoke-hero-inner">
           <div className="bespoke-hero-eyebrow" style={{ fontSize: '0.72rem' }}>
-            ⬡ Thinkovr — Est. 2026 — 10 Slots / Week
+            ⬡ Thinkovr Verum Engine — Est. 2026 — 10 Slots / Week
           </div>
           <h1 className="bespoke-hero-headline">
             <div className="bkw-line-outline">We Don&apos;t Give</div>
@@ -347,7 +347,7 @@ export default function BespokePage() {
           </h1>
           <p className="bespoke-hero-sub">
             One directive. Logically derived. Ruthlessly accurate.
-            Thinkovr processes your parameters and delivers
+            The Thinkovr Verum Engine processes your parameters and delivers
             the singular right move — not a list of possibilities.
           </p>
           <div className="bespoke-hero-pills">
@@ -396,7 +396,7 @@ export default function BespokePage() {
                 You are paralysed because you have too much of it.
               </p>
               <p>
-                Thinkovr exists to end that paralysis.
+                The Thinkovr Verum Engine exists to end that paralysis.
                 The Engine does not brainstorm with you.
                 It does not validate you. It does not comfort you.
               </p>
@@ -672,7 +672,7 @@ export default function BespokePage() {
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', letterSpacing: '0.3em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 8 }}>⬡⬡⬡⬡ Forge — Enterprise</div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700 }}>$2,500 <span style={{ fontSize: '0.8rem', color: 'var(--cream-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.1em' }}>/ team engagement</span></div>
-              <p style={{ fontSize: '0.9rem', color: 'var(--cream-dim)', fontStyle: 'italic', marginTop: 8 }}>Thinkovr deployed for your entire decision-making team. For organisations making high-stakes resource allocation decisions.</p>
+              <p style={{ fontSize: '0.9rem', color: 'var(--cream-dim)', fontStyle: 'italic', marginTop: 8 }}>Thinkovr Verum Engine deployed for your entire decision-making team. For organisations making high-stakes resource allocation decisions.</p>
             </div>
             <a href="mailto:forge@thinkovr.com?subject=Forge Enterprise Enquiry" className="bespoke-btn bespoke-btn-ghost">
               <span>Enquire — Forge</span>
@@ -830,10 +830,10 @@ export default function BespokePage() {
         <div className="bespoke-container">
           <div className="bespoke-footer-top">
             <div className="bespoke-footer-brand bespoke-reveal" ref={addRevealRef}>
-              <h3>Thinkovr</h3>
+              <h3>Thinkovr Verum Engine</h3>
               <p className="bkw-tagline">We don&apos;t give you options. We give you the right move.</p>
               <p>
-                Thinkovr is a precision-grade decision system.
+                The Thinkovr Verum Engine is a precision-grade decision system.
                 Not a consulting firm. Not a chatbot. Not a life coach.
                 A clarity machine for people who are done with options.
               </p>
@@ -874,8 +874,8 @@ export default function BespokePage() {
 
           <div className="bespoke-footer-bottom">
             <div className="bespoke-footer-legal">
-              © 2026 Thinkovr. All rights reserved.
-              Thinkovr is a strategic advisory service. Not financial or legal advice.
+              © 2026 Thinkovr Verum Engine. All rights reserved.
+              Thinkovr Verum Engine is a strategic advisory service. Not financial or legal advice.
             </div>
             <div className="bespoke-footer-socials">
               <a href="https://x.com/thinkovr" target="_blank" rel="noopener noreferrer">X</a>
@@ -889,7 +889,7 @@ export default function BespokePage() {
         <div className="bespoke-footer-disclaimer">
           <p>Disclaimer &amp; Terms: All generated blueprints are for brainstorming purposes only and do not constitute professional advice. 
           The website, its owners, and developers accept zero liability for any consequences arising from the use of this tool. 
-          By entering a prompt, you agree that all submitted ideas, words, and resulting blueprints become the exclusive intellectual property of Thinkovr. 
+          By entering a prompt, you agree that all submitted ideas, words, and resulting blueprints become the exclusive intellectual property of Thinkovr Verum Engine.
           <a href="/disclaimer">Read our Full Disclaimer and Terms</a>.</p>
         </div>
       </footer>
@@ -908,7 +908,7 @@ export default function BespokePage() {
               &ldquo;I understand that The Engine will produce one directive — not a list of options.
               I commit to executing The Right Move for a minimum of 30 consecutive days
               before questioning its validity. I understand that requesting validation,
-              not execution, will result in a permanent ban from Thinkovr.
+              not execution, will result in a permanent ban from Thinkovr Verum Engine.
               I am here for clarity, not comfort.&rdquo;
             </p>
           </div>

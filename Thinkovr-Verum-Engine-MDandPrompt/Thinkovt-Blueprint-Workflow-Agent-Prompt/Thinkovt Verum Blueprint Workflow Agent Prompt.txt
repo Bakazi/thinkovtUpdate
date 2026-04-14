@@ -1,0 +1,2 @@
+Thinkovt Verum Engine: Blueprint Workflow Agent Prompt
+This prompt uses a state-aware architecture to handle the specific logic of your registration, blueprint decision, and quoting pipeline.

@@ -39,7 +39,7 @@ export async function seed() {
       maxBlueprints: 1,
       features: JSON.stringify([
         '1 blueprint per month',
-        'Basic Thinkovr analysis',
+        'Basic Thinkovr Verum Engine analysis',
         'Community access',
       ]),
       sortOrder: 0,
@@ -51,7 +51,7 @@ export async function seed() {
       maxBlueprints: 10,
       features: JSON.stringify([
         '10 blueprints per month',
-        'Full Thinkovr analysis',
+        'Full Thinkovr Verum Engine analysis',
         'Priority generation',
         'Email support',
       ]),
@@ -64,11 +64,11 @@ export async function seed() {
       maxBlueprints: 999,
       features: JSON.stringify([
         'Unlimited blueprints',
-        'Full Thinkovr analysis',
+        'Full Thinkovr Verum Engine analysis',
         'Instant generation',
         'Priority admin review',
         'Detailed risk assessment',
-        'Direct Thinkovr support',
+        'Direct Thinkovr Verum Engine support',
       ]),
       sortOrder: 2,
     },

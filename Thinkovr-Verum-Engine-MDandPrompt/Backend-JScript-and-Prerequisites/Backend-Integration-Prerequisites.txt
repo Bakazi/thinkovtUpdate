@@ -1,0 +1,4 @@
+Backend Integration Code (Node.js / Express)
+This code demonstrates how to integrate these agents into your backend. It handles dynamic API keys (fetching them from your database/admin settings rather than environment variables) and includes the endpoints to handle the exact Verum workflow you described.
+
+Prerequisites: npm install express nodemailer openai

@@ -101,7 +101,7 @@ export default function RegisterPage() {
               color: '#BDB49A',
               textTransform: 'uppercase',
             }}>
-              Think Over Everything
+              Verum Engine · Think Over Everything
             </p>
           </Link>
         </div>

@@ -113,7 +113,7 @@ export default function StaffDashboard() {
         <aside style={{ width: 240, background: '#04040A', borderRight: '1px solid rgba(201,168,76,0.18)', padding: '32px 0', position: 'fixed', left: 0, top: 0, bottom: 0 }}>
           <div style={{ padding: '0 24px', marginBottom: 40 }}>
             <Link href="/" style={{ textDecoration: 'none' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', letterSpacing: '0.2em', color: '#C9A84C', textTransform: 'uppercase' }}>Thinkovr</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', letterSpacing: '0.2em', color: '#C9A84C', textTransform: 'uppercase' }}>Thinkovr Verum Engine</h2>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.45rem', letterSpacing: '0.2em', color: '#7A6228', textTransform: 'uppercase', marginTop: 4 }}>Staff Panel</p>
             </Link>
           </div>
