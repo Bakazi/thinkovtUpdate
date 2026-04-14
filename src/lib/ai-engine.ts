@@ -96,6 +96,72 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
   throw new Error('All AI providers failed. Configure Gemini/Groq/Ollama in Admin → AI Configuration.');
 }
 
+export async function generateText(params: { systemPrompt: string; userPrompt: string; maxOutputTokens?: number }) {
+  const configs = await db.aIConfig.findMany();
+  const configMap: Record<string, string> = {};
+  for (const c of configs) configMap[c.key] = c.value;
+
+  const aiProvider = (configMap['AI_PROVIDER'] || 'AUTO').toUpperCase();
+
+  const geminiKeys = splitKeys(
+    configMap['GEMINI_API_KEYS'] || process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || ''
+  );
+  const geminiModel = configMap['GEMINI_MODEL'] || 'gemini-1.5-flash';
+
+  const groqKeys = splitKeys(configMap['GROQ_API_KEYS'] || process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '');
+  const groqModel = configMap['GROQ_MODEL'] || 'llama-3.3-70b-versatile';
+
+  const ollamaUrl = configMap['OLLAMA_BASE_URL'] || '';
+  const ollamaModel = configMap['OLLAMA_MODEL'] || 'llama3';
+
+  const orderedProviders =
+    aiProvider === 'AUTO'
+      ? (['GEMINI', 'GROQ', 'OLLAMA', 'BUILTIN'] as const)
+      : ([aiProvider] as const);
+
+  const maxOutputTokens = params.maxOutputTokens ?? 2048;
+
+  for (const provider of orderedProviders) {
+    if (provider === 'GEMINI') {
+      for (const key of geminiKeys) {
+        try {
+          return await generateWithGemini(key, geminiModel, params.systemPrompt, params.userPrompt, maxOutputTokens);
+        } catch (err) {
+          console.error('Gemini failed:', err);
+        }
+      }
+    }
+
+    if (provider === 'GROQ') {
+      for (const key of groqKeys) {
+        try {
+          return await generateWithGroq(key, params.systemPrompt, params.userPrompt, groqModel, maxOutputTokens);
+        } catch (err) {
+          console.error('Groq failed:', err);
+        }
+      }
+    }
+
+    if (provider === 'OLLAMA' && ollamaUrl) {
+      try {
+        return await generateWithOllama(ollamaUrl, params.systemPrompt, params.userPrompt, ollamaModel);
+      } catch (err) {
+        console.error('Ollama failed:', err);
+      }
+    }
+
+    if (provider === 'BUILTIN') {
+      try {
+        return await generateWithBuiltin(params.systemPrompt, params.userPrompt);
+      } catch (err) {
+        console.error('Built-in failed:', err);
+      }
+    }
+  }
+
+  throw new Error('All AI providers failed. Configure Gemini/Groq/Ollama in Admin → AI Configuration.');
+}
+
 function splitKeys(raw: string): string[] {
   return String(raw)
     .split(/[,\n]/g)
@@ -103,7 +169,13 @@ function splitKeys(raw: string): string[] {
     .filter(Boolean);
 }
 
-async function generateWithGemini(apiKey: string, model: string, systemPrompt: string, userPrompt: string): Promise<string> {
+async function generateWithGemini(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  maxOutputTokens = 4096
+): Promise<string> {
   // Google AI Studio (Gemini) REST API
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/` +
@@ -121,7 +193,7 @@ async function generateWithGemini(apiKey: string, model: string, systemPrompt: s
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 4096,
+        maxOutputTokens,
       },
     }),
   });
@@ -196,7 +268,13 @@ async function generateWithBuiltin(systemPrompt: string, userPrompt: string): Pr
   return content;
 }
 
-async function generateWithGroq(apiKey: string, systemPrompt: string, userPrompt: string, modelName: string): Promise<string> {
+async function generateWithGroq(
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+  modelName: string,
+  max_tokens = 4096
+): Promise<string> {
   const model = modelName || 'llama-3.3-70b-versatile';
 
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -212,7 +290,7 @@ async function generateWithGroq(apiKey: string, systemPrompt: string, userPrompt
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
-      max_tokens: 4096,
+      max_tokens,
     }),
   });
 

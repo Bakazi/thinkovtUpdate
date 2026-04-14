@@ -23,6 +23,12 @@ export async function GET(req: NextRequest) {
       { key: 'BLUEPRINT_SYSTEM_PROMPT', value: '' },
       { key: 'ENGINE_SKILLS', value: '' },
       { key: 'AUDIT_SYSTEM_PROMPT', value: '' },
+      // SMTP (for workflow emails)
+      { key: 'SMTP_HOST', value: '' },
+      { key: 'SMTP_PORT', value: '587' },
+      { key: 'SMTP_USER', value: '' },
+      { key: 'SMTP_PASS', value: '' },
+      { key: 'SMTP_FROM', value: '' },
       // Gemini (default in AUTO)
       { key: 'GEMINI_API_KEYS', value: '' },
       { key: 'GEMINI_MODEL', value: 'gemini-1.5-flash' },

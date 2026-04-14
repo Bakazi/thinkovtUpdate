@@ -129,3 +129,28 @@ model AgentPrompt {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model TierChangeQuote {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+  requestedTierId String
+  requestedTier   PaymentTier @relation("RequestedTier", fields: [requestedTierId], references: [id])
+
+  currentTierId  String?
+  currentTier    PaymentTier? @relation("CurrentTier", fields: [currentTierId], references: [id])
+
+  status         String   @default("PENDING") // PENDING | APPROVED | DENIED
+  quoteAmount    Float?   // optional override (defaults to tier price)
+  currency       String   @default("ZAR")
+
+  decidedBy      String?
+  decidedAt      DateTime?
+
+  denialReason   String?
+  denialFeedback String?  @default("{}") // JSON string of questionnaire responses
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

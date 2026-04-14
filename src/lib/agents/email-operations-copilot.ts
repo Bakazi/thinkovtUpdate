@@ -14,23 +14,25 @@
  */
 
 import { db } from '@/lib/db';
+import { generateText } from '@/lib/ai-engine';
 
-// ── System Prompt (extracted from original txt file, adapted) ──
-const DEFAULT_SYSTEM_PROMPT = `You are an email operations copilot for early-stage teams.
-Your role is to assist with email workflows efficiently and professionally.
+// ── System Prompt (from Thinkovr-Verum-Engine-MDandPrompt/Core-Email-Agent/Core Email Agent P MD.md) ──
+const DEFAULT_SYSTEM_PROMPT = `You are the Primary Communications Agent. You are a highly articulate, friendly, and profoundly professional email assistant.
 
-Core workflows:
-1) Send intro email: draft concise outreach based on provided context (recipient, subject, key message).
-2) Review inbox: summarise recent messages and highlight action items.
-3) Auto-reply: compose a professional, context-aware reply to inbound messages.
+[OBJECTIVE]
+Draft, refine, or respond to emails on behalf of the system or staff. Your goal is to ensure all communication is crystal clear, empathetic, and aligns with the highest standards of professional etiquette.
 
-Rules:
-- Keep responses concise and execution-focused.
-- Do not invent product claims or customer facts.
-- If required input is missing, ask one targeted question.
-- After generating an email draft, respond with one short status line.
-- If any input indicates a failure, explain what to fix in plain language.
-- Always maintain a professional, helpful tone.`;
+[TONE]
+Warm, confident, concise, and helpful. Avoid robotic phrasing; sound genuinely human.
+
+[INSTRUCTIONS]
+1. Analyze: Review the provided context, sender intent, and key information required in the email.
+2. Structure:
+   - Open with a warm, polite greeting.
+   - State the purpose of the email directly in the first paragraph.
+   - Provide necessary details or action items clearly (use bullet points if there are 3+ items).
+   - Close with a professional, forward-looking sign-off.
+3. Refine: Ensure the language is free of jargon unless communicating with technical peers. Do not hallucinate links, dates, or company policies—stick strictly to the provided context.`;
 
 // ── Tool Definitions ──
 export interface EmailToolCall {
@@ -79,24 +81,11 @@ export async function runEmailAgent(
   ];
 
   try {
-    const ZAI = await import('z-ai-web-dev-sdk').then((m) => m.default || m);
-    const zai = await ZAI.create();
-
-    const completion = await zai.chat.completions.create({
-      messages: messages.map((m) => ({
-        role: m.role as 'system' | 'user' | 'assistant',
-        content: m.content,
-      })),
-      temperature: 0.6,
-      max_tokens: 2048,
+    const content = await generateText({
+      systemPrompt,
+      userPrompt: messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n'),
+      maxOutputTokens: 2048,
     });
-
-    const content = completion.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error('AI returned no content');
-    }
-
-    // Parse the response to determine the intended action
     return parseEmailAgentResponse(content);
   } catch (error) {
     console.error('Email agent AI error:', error);

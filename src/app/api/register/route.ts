@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { generateWorkflowEmail } from '@/lib/verum-workflow';
+import { sendEmailText } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,6 +44,18 @@ export async function POST(req: NextRequest) {
     });
 
     const { password: _, ...userWithoutPassword } = user;
+
+    // Fire-and-forget welcome email (does not block registration success)
+    try {
+      const { subject, body } = await generateWorkflowEmail({
+        state: 'NEW_REGISTRATION',
+        userName: user.name || 'Operator',
+        dashboardUrl: `${req.nextUrl.origin}/dashboard`,
+      });
+      await sendEmailText({ to: user.email, subject, body });
+    } catch (e) {
+      console.error('Registration email failed:', e);
+    }
 
     return NextResponse.json(
       { user: userWithoutPassword, message: 'Account created successfully' },

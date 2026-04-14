@@ -103,41 +103,24 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'This payment tier is not available' }, { status: 400 });
     }
 
-    // Upsert subscription
-    const subscription = await db.subscription.upsert({
-      where: { userId },
-      update: {
-        tierId,
-        status: 'ACTIVE',
-        startedAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      },
-      create: {
+    // Create a "quote" request for admin/staff approval instead of applying immediately
+    const current = await db.subscription.findUnique({ where: { userId } });
+    const quote = await db.tierChangeQuote.create({
+      data: {
         userId,
-        tierId,
-        status: 'ACTIVE',
-        startedAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        requestedTierId: tierId,
+        currentTierId: current?.tierId || null,
+        status: 'PENDING',
+        quoteAmount: tier.price,
+        currency: tier.currency,
       },
-      include: {
-        tier: true,
-      },
+      include: { requestedTier: true, currentTier: true },
     });
-
-    const parsedSubscription = {
-      ...subscription,
-      tier: subscription.tier
-        ? {
-            ...subscription.tier,
-            features: JSON.parse(subscription.tier.features),
-          }
-        : null,
-    };
 
     return NextResponse.json({
-      subscription: parsedSubscription,
-      message: 'Subscription updated successfully',
-    });
+      quote,
+      message: 'Request received. Verum will review and respond with an approval or denial.',
+    }, { status: 202 });
   } catch (error: unknown) {
     console.error('Update subscription error:', error);
     return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 });

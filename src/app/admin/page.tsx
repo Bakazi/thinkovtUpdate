@@ -63,7 +63,20 @@ interface PaymentItem {
   createdAt: string;
 }
 
-type Tab = 'blueprints' | 'users' | 'ai-config' | 'payments' | 'agents';
+type Tab = 'blueprints' | 'users' | 'ai-config' | 'payments' | 'quotes' | 'agents';
+
+interface QuoteItem {
+  id: string;
+  status: string;
+  quoteAmount: number | null;
+  currency: string;
+  denialReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; name: string | null; email: string };
+  requestedTier: PaymentTier;
+  currentTier: PaymentTier | null;
+}
 
 interface AgentInfo {
   name: string;
@@ -139,6 +152,8 @@ export default function AdminDashboard() {
   const [configs, setConfigs] = useState<AIConfig[]>([]);
   const [tiers, setTiers] = useState<PaymentTier[]>([]);
   const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [quotes, setQuotes] = useState<QuoteItem[]>([]);
+  const [quoteTotals, setQuoteTotals] = useState<{ pending: number; approved: number; denied: number } | null>(null);
   const [bpFilter, setBpFilter] = useState<BlueprintFilter>('ALL');
   const [selectedBp, setSelectedBp] = useState<Blueprint | null>(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -264,6 +279,19 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const loadQuotes = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/quotes');
+      if (res.ok) {
+        const data = await res.json();
+        setQuotes(data.quotes || []);
+        setQuoteTotals(data.totals || null);
+      }
+    } catch (err) {
+      console.error('Failed to load quotes:', err);
+    }
+  }, []);
+
   const loadTabData = useCallback(async (tab: Tab) => {
     setDataLoading(true);
     if (tab === 'blueprints') await loadBlueprints();
@@ -272,17 +300,20 @@ export default function AdminDashboard() {
     else if (tab === 'payments') {
       await Promise.all([loadConfigs(), loadTiers(), loadPayments()]);
     }
+    else if (tab === 'quotes') {
+      await loadQuotes();
+    }
     else if (tab === 'agents') {
       await loadAgents();
     }
     setDataLoading(false);
-  }, [loadBlueprints, loadUsers, loadConfigs, loadTiers, loadPayments, loadAgents]);
+  }, [loadBlueprints, loadUsers, loadConfigs, loadTiers, loadPayments, loadQuotes, loadAgents]);
 
   const loadInitialData = useCallback(async () => {
     setLoading(true);
-    await Promise.all([loadBlueprints(), loadUsers(), loadConfigs(), loadAgents()]);
+    await Promise.all([loadBlueprints(), loadUsers(), loadConfigs(), loadQuotes(), loadAgents()]);
     setLoading(false);
-  }, [loadBlueprints, loadUsers, loadConfigs, loadAgents]);
+  }, [loadBlueprints, loadUsers, loadConfigs, loadQuotes, loadAgents]);
 
   /* ── effects ── */
   useEffect(() => {
@@ -439,6 +470,46 @@ export default function AdminDashboard() {
     }
   };
 
+  /* ── quote actions ── */
+  const handleSendQuote = async (quoteId: string, amount: number) => {
+    try {
+      const res = await fetch('/api/admin/quotes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId, action: 'send_quote', quoteAmount: amount }),
+      });
+      if (res.ok) {
+        showToast('Quote sent', 'success');
+        loadQuotes();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || 'Failed to send quote', 'error');
+      }
+    } catch {
+      showToast('Failed to send quote', 'error');
+    }
+  };
+
+  const handleDenyQuote = async (quoteId: string) => {
+    const denialReason = prompt('Reason for denial?') || '';
+    try {
+      const res = await fetch('/api/admin/quotes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId, action: 'deny', denialReason }),
+      });
+      if (res.ok) {
+        showToast('Quote denied', 'info');
+        loadQuotes();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.error || 'Failed to deny quote', 'error');
+      }
+    } catch {
+      showToast('Failed to deny quote', 'error');
+    }
+  };
+
   const handleSavePayfastSetting = async (key: string, value: string) => {
     await handleSaveConfig(key);
   };
@@ -582,6 +653,7 @@ export default function AdminDashboard() {
             { key: 'users' as Tab, label: 'Users' },
             { key: 'ai-config' as Tab, label: 'AI Config' },
             { key: 'payments' as Tab, label: 'Payments' },
+            { key: 'quotes' as Tab, label: 'Quotes' },
             { key: 'agents' as Tab, label: 'Agents' },
           ]).map((tab) => (
             <button
@@ -1022,6 +1094,11 @@ export default function AdminDashboard() {
                   'BLUEPRINT_SYSTEM_PROMPT',
                   'ENGINE_SKILLS',
                   'AUDIT_SYSTEM_PROMPT',
+                  'SMTP_HOST',
+                  'SMTP_PORT',
+                  'SMTP_USER',
+                  'SMTP_PASS',
+                  'SMTP_FROM',
                   'GEMINI_API_KEYS',
                   'GEMINI_MODEL',
                   'GROQ_API_KEYS',
@@ -1109,6 +1186,11 @@ export default function AdminDashboard() {
                             outline: 'none',
                           }}
                           placeholder={
+                            config.key === 'SMTP_HOST' ? 'smtp.yourmail.com' :
+                            config.key === 'SMTP_PORT' ? '587' :
+                            config.key === 'SMTP_USER' ? 'alerts@yourdomain.com' :
+                            config.key === 'SMTP_PASS' ? '(password)' :
+                            config.key === 'SMTP_FROM' ? '"Verum Engine" <alerts@yourdomain.com>' :
                             config.key === 'GEMINI_API_KEYS' ? 'AIza... (comma-separated keys supported)' :
                             config.key === 'GROQ_API_KEYS' ? 'gsk_... (comma-separated keys supported)' :
                             config.key === 'OLLAMA_BASE_URL' ? 'http://localhost:11434' :
@@ -1140,6 +1222,11 @@ export default function AdminDashboard() {
                        config.key === 'BLUEPRINT_SYSTEM_PROMPT' ? 'Controls how the Engine writes blueprints.' :
                        config.key === 'ENGINE_SKILLS' ? 'Reusable rules/skills appended to the Engine prompt.' :
                        config.key === 'AUDIT_SYSTEM_PROMPT' ? 'Controls how the Engine writes free audits.' :
+                       config.key === 'SMTP_HOST' ? 'SMTP host for sending workflow emails.' :
+                       config.key === 'SMTP_PORT' ? 'SMTP port (587 typical, 465 for SSL).' :
+                       config.key === 'SMTP_USER' ? 'SMTP username (usually an email address).' :
+                       config.key === 'SMTP_PASS' ? 'SMTP password/app password.' :
+                       config.key === 'SMTP_FROM' ? 'From header used for outgoing emails.' :
                        config.key === 'GEMINI_API_KEYS' ? 'Gemini keys (free tier possible). Paste multiple keys separated by commas/newlines for failover.' :
                        config.key === 'GEMINI_MODEL' ? 'Gemini model id (e.g. gemini-1.5-flash).' :
                        config.key === 'GROQ_API_KEYS' ? 'Groq keys. Paste multiple keys separated by commas/newlines for failover.' :
@@ -1593,6 +1680,131 @@ export default function AdminDashboard() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════
+            QUOTES TAB
+        ════════════════════════════════════════════════════════════════ */}
+        {activeTab === 'quotes' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+              <div>
+                <h2 style={{ fontFamily: FONT_DISPLAY, fontSize: '1rem', letterSpacing: '0.1em', color: CREAM, textTransform: 'uppercase', marginBottom: 6 }}>
+                  Quotes
+                </h2>
+                <p style={{ fontFamily: FONT_MONO, fontSize: '0.5rem', color: DIM, letterSpacing: '0.08em' }}>
+                  Tier-change quotes: send quote, then user accepts/denies.
+                </p>
+              </div>
+              <button
+                onClick={() => loadQuotes()}
+                style={{
+                  padding: '10px 18px',
+                  background: 'transparent',
+                  border: `1px solid rgba(201,168,76,0.3)`,
+                  fontFamily: FONT_MONO,
+                  fontSize: '0.55rem',
+                  letterSpacing: '0.15em',
+                  color: GOLD,
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Refresh
+              </button>
+            </div>
+
+            {quoteTotals && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {[
+                  { k: 'pending', label: 'Pending', v: quoteTotals.pending },
+                  { k: 'approved', label: 'Approved', v: quoteTotals.approved },
+                  { k: 'denied', label: 'Denied', v: quoteTotals.denied },
+                ].map((x) => (
+                  <div key={x.k} style={{ border: `1px solid ${BORDER}`, background: CARD_BG, padding: 16 }}>
+                    <p style={{ fontFamily: FONT_MONO, fontSize: '0.48rem', color: DIM, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 6 }}>
+                      {x.label}
+                    </p>
+                    <p style={{ fontFamily: FONT_DISPLAY, fontSize: '1.2rem', color: GOLD, margin: 0 }}>{x.v}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ border: `1px solid ${BORDER}`, background: CARD_BG }}>
+              <div style={{ padding: 16, borderBottom: `1px solid ${BORDER}` }}>
+                <p style={{ fontFamily: FONT_MONO, fontSize: '0.55rem', color: MUTED, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>
+                  Latest requests
+                </p>
+              </div>
+
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {quotes.length === 0 && (
+                  <p style={{ fontFamily: FONT_MONO, fontSize: '0.6rem', color: DIM, margin: 0 }}>No quotes yet.</p>
+                )}
+                {quotes.map((q) => {
+                  const amount = q.quoteAmount ?? q.requestedTier.price;
+                  return (
+                    <div key={q.id} style={{ border: `1px solid rgba(201,168,76,0.12)`, padding: 14 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontFamily: FONT_MONO, fontSize: '0.55rem', color: GOLD, letterSpacing: '0.1em', margin: 0, textTransform: 'uppercase' }}>
+                            {q.user.email} — {q.status}
+                          </p>
+                          <p style={{ fontFamily: FONT_MONO, fontSize: '0.52rem', color: MUTED, margin: '6px 0 0 0' }}>
+                            Requested: {q.requestedTier.name} ({fmtCurrency(q.requestedTier.price, q.requestedTier.currency)}) · Current: {q.currentTier?.name || 'Free'}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          {(q.status === 'PENDING' || q.status === 'QUOTED') && (
+                            <button
+                              onClick={() => handleSendQuote(q.id, amount)}
+                              style={{
+                                padding: '8px 12px',
+                                background: GOLD,
+                                color: BG,
+                                border: 'none',
+                                fontFamily: FONT_MONO,
+                                fontSize: '0.5rem',
+                                letterSpacing: '0.12em',
+                                textTransform: 'uppercase',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Send Quote
+                            </button>
+                          )}
+                          {q.status !== 'DENIED' && q.status !== 'APPROVED' && (
+                            <button
+                              onClick={() => handleDenyQuote(q.id)}
+                              style={{
+                                padding: '8px 12px',
+                                background: 'transparent',
+                                color: DANGER,
+                                border: `1px solid rgba(192,57,43,0.3)`,
+                                fontFamily: FONT_MONO,
+                                fontSize: '0.5rem',
+                                letterSpacing: '0.12em',
+                                textTransform: 'uppercase',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Deny
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {q.denialReason && (
+                        <p style={{ fontFamily: FONT_MONO, fontSize: '0.52rem', color: DANGER, margin: '10px 0 0 0' }}>
+                          Denial: {q.denialReason}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

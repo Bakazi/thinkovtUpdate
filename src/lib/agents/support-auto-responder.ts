@@ -14,6 +14,7 @@
  */
 
 import { db } from '@/lib/db';
+import { generateText } from '@/lib/ai-engine';
 
 // ── System Prompt (extracted from original YAML, adapted for general use) ──
 const DEFAULT_SYSTEM_PROMPT = `You are a support auto-responder integrated with a customer support system.
@@ -107,22 +108,11 @@ export async function runSupportAgent(
   ];
 
   try {
-    const ZAI = await import('z-ai-web-dev-sdk').then((m) => m.default || m);
-    const zai = await ZAI.create();
-
-    const completion = await zai.chat.completions.create({
-      messages: messages.map((m) => ({
-        role: m.role as 'system' | 'user' | 'assistant',
-        content: m.content,
-      })),
-      temperature: 0.5,
-      max_tokens: 1500,
+    const content = await generateText({
+      systemPrompt,
+      userPrompt: messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n\n'),
+      maxOutputTokens: 1500,
     });
-
-    const content = completion.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error('AI returned no content');
-    }
 
     return parseSupportAgentResponse(content);
   } catch (error) {
