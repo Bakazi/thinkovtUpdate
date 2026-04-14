@@ -12,6 +12,119 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
     configMap[c.key] = c.value;
   }
 
+  const aiProvider = (configMap['AI_PROVIDER'] || 'AUTO').toUpperCase();
+
+  const geminiKeys = splitKeys(
+    configMap['GEMINI_API_KEYS'] || process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || ''
+  );
+  const geminiModel = configMap['GEMINI_MODEL'] || 'gemini-1.5-flash';
+
+  const groqKeys = splitKeys(configMap['GROQ_API_KEYS'] || process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '');
+  const groqModel = configMap['GROQ_MODEL'] || 'llama-3.3-70b-versatile';
+
+  const ollamaUrl = configMap['OLLAMA_BASE_URL'] || '';
+  const ollamaModel = configMap['OLLAMA_MODEL'] || 'llama3';
+
+  const userPrompt = `Generate a comprehensive blueprint for the following idea:\n\nTitle: ${title}\n\nIdea/Description: ${idea}\n\nProvide a complete, actionable blueprint following the Thinkovr format.`;
+
+  const orderedProviders =
+    aiProvider === 'AUTO'
+      ? (['GEMINI', 'GROQ', 'OLLAMA', 'BUILTIN'] as const)
+      : ([aiProvider] as const);
+
+  for (const provider of orderedProviders) {
+    // Gemini
+    if (provider === 'GEMINI') {
+      for (const key of geminiKeys) {
+        try {
+          return await generateWithGemini(key, geminiModel, userPrompt);
+        } catch (err) {
+          console.error('Gemini failed:', err);
+        }
+      }
+    }
+
+    // Groq
+    if (provider === 'GROQ') {
+      for (const key of groqKeys) {
+        try {
+          return await generateWithGroq(key, userPrompt, groqModel);
+        } catch (err) {
+          console.error('Groq failed:', err);
+        }
+      }
+    }
+
+    // Ollama
+    if (provider === 'OLLAMA' && ollamaUrl) {
+      try {
+        return await generateWithOllama(ollamaUrl, userPrompt, ollamaModel);
+      } catch (err) {
+        console.error('Ollama failed:', err);
+      }
+    }
+
+    // Built-in (requires .z-ai-config file; typically not available on Vercel)
+    if (provider === 'BUILTIN') {
+      try {
+        return await generateWithBuiltin(userPrompt);
+      } catch (err) {
+        console.error('Built-in failed:', err);
+      }
+    }
+  }
+
+  throw new Error('All AI providers failed. Configure Gemini/Groq/Ollama in Admin → AI Configuration.');
+}
+
+function splitKeys(raw: string): string[] {
+  return String(raw)
+    .split(/[,\n]/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+async function generateWithGemini(apiKey: string, model: string, userPrompt: string): Promise<string> {
+  // Google AI Studio (Gemini) REST API
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/` +
+    `${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${BLUEPRINT_SYSTEM_PROMPT}\n\n${userPrompt}` }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API error (${res.status}): ${errText}`);
+  }
+
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join('');
+  if (!text) throw new Error('Gemini returned no content');
+  return text;
+}
+
+// Legacy: keep for backwards compat if someone still uses these keys
+// Priority 1: Built-in free AI (z-ai-web-dev-sdk) — no key needed
+export async function generateBlueprintLegacy(idea: string, title: string): Promise<string> {
+  const configs = await db.aIConfig.findMany();
+  const configMap: Record<string, string> = {};
+  for (const c of configs) configMap[c.key] = c.value;
+
   const aiProvider = configMap['AI_PROVIDER'] || 'BUILTIN';
   const groqKey = configMap['GROQ_API_KEY'] || process.env.GROQ_API_KEY || '';
   const ollamaUrl = configMap['OLLAMA_BASE_URL'];
@@ -19,7 +132,6 @@ export async function generateBlueprint(idea: string, title: string): Promise<st
 
   const userPrompt = `Generate a comprehensive blueprint for the following idea:\n\nTitle: ${title}\n\nIdea/Description: ${idea}\n\nProvide a complete, actionable blueprint following the Thinkovr format.`;
 
-  // Priority 1: Built-in free AI (z-ai-web-dev-sdk) — no key needed
   if (aiProvider === 'BUILTIN' || (!groqKey && !ollamaUrl)) {
     try {
       return await generateWithBuiltin(userPrompt);
@@ -128,75 +240,96 @@ export async function testAIConnection(): Promise<{ success: boolean; message: s
     configMap[c.key] = c.value;
   }
 
-  const aiProvider = configMap['AI_PROVIDER'] || 'BUILTIN';
+  const aiProvider = (configMap['AI_PROVIDER'] || 'AUTO').toUpperCase();
 
-  // Test built-in AI first
-  if (aiProvider === 'BUILTIN') {
-    try {
-      const ZAI = await import('z-ai-web-dev-sdk').then((m) => m.default || m);
-      const zai = await ZAI.create();
-      await zai.chat.completions.create({
-        messages: [{ role: 'user', content: 'Say "Engine online." in 2 words.' }],
-        temperature: 0,
-        max_tokens: 20,
-      });
-      return { success: true, message: 'Built-in AI (free) — connected and ready.' };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown';
-      if (msg.toLowerCase().includes('configuration file not found')) {
-        return {
-          success: false,
-          message:
-            'BUILTIN is not configured on Vercel. Switch AI_PROVIDER to GROQ and set GROQ_API_KEY, or use OLLAMA locally.',
-        };
+  const geminiKeys = splitKeys(
+    configMap['GEMINI_API_KEYS'] || process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || ''
+  );
+  const geminiModel = configMap['GEMINI_MODEL'] || 'gemini-1.5-flash';
+
+  const groqKeys = splitKeys(configMap['GROQ_API_KEYS'] || process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '');
+  const groqModel = configMap['GROQ_MODEL'] || 'llama-3.3-70b-versatile';
+  const ollamaUrl = configMap['OLLAMA_BASE_URL'] || '';
+
+  const orderedProviders =
+    aiProvider === 'AUTO'
+      ? (['GEMINI', 'GROQ', 'OLLAMA', 'BUILTIN'] as const)
+      : ([aiProvider] as const);
+
+  for (const provider of orderedProviders) {
+    if (provider === 'GEMINI') {
+      for (const key of geminiKeys) {
+        try {
+          await generateWithGemini(key, geminiModel, 'Say "Engine online." in 2 words.');
+          return { success: true, message: `Gemini (${geminiModel}) is connected.` };
+        } catch (err) {
+          console.error('Gemini test failed:', err);
+        }
       }
-      return { success: false, message: `Built-in AI error: ${msg}` };
     }
-  }
 
-  // Test Groq
-  const groqKey = configMap['GROQ_API_KEY'] || process.env.GROQ_API_KEY || '';
-  if (groqKey) {
-    try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: configMap['MODEL_NAME'] || 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: 'Say "Engine online." in 3 words.' }],
+    if (provider === 'GROQ') {
+      for (const key of groqKeys) {
+        try {
+          const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${key}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: groqModel,
+              messages: [{ role: 'user', content: 'Say "Engine online." in 3 words.' }],
+              temperature: 0,
+              max_tokens: 20,
+            }),
+          });
+
+          if (response.ok) {
+            return { success: true, message: `Groq (${groqModel}) is connected.` };
+          }
+        } catch (err) {
+          console.error('Groq test failed:', err);
+        }
+      }
+    }
+
+    if (provider === 'OLLAMA' && ollamaUrl) {
+      try {
+        const url = ollamaUrl.replace(/\/$/, '');
+        const response = await fetch(`${url}/api/tags`);
+        if (response.ok) {
+          return { success: true, message: `Ollama is reachable at ${ollamaUrl}.` };
+        }
+      } catch (err) {
+        console.error('Ollama test failed:', err);
+      }
+    }
+
+    if (provider === 'BUILTIN') {
+      try {
+        const ZAI = await import('z-ai-web-dev-sdk').then((m) => m.default || m);
+        const zai = await ZAI.create();
+        await zai.chat.completions.create({
+          messages: [{ role: 'user', content: 'Say "Engine online." in 2 words.' }],
           temperature: 0,
           max_tokens: 20,
-        }),
-      });
-
-      if (response.ok) {
-        return { success: true, message: 'Groq API connection successful.' };
+        });
+        return { success: true, message: 'Built-in AI — connected.' };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown';
+        if (String(msg).toLowerCase().includes('configuration file not found')) {
+          return {
+            success: false,
+            message:
+              'Built-in is not configured on Vercel. Use AUTO (Gemini→Groq→Ollama) or set up a Groq/Gemini key.',
+          };
+        }
       }
-      return { success: false, message: `Groq API returned ${response.status}. Check your API key.` };
-    } catch {
-      return { success: false, message: 'Could not reach Groq API.' };
     }
   }
 
-  // Test Ollama
-  const ollamaUrl = configMap['OLLAMA_BASE_URL'];
-  if (ollamaUrl) {
-    try {
-      const url = ollamaUrl.replace(/\/$/, '');
-      const response = await fetch(`${url}/api/tags`);
-      if (response.ok) {
-        return { success: true, message: `Ollama is reachable at ${ollamaUrl}.` };
-      }
-      return { success: false, message: `Ollama returned ${response.status}.` };
-    } catch {
-      return { success: false, message: `Could not reach Ollama at ${ollamaUrl}.` };
-    }
-  }
-
-  return { success: false, message: 'No AI provider configured.' };
+  return { success: false, message: 'No AI provider configured. Add Gemini/Groq keys or an Ollama URL.' };
 }
 
 export async function generateAuditResponse(email: string, plan: string): Promise<string> {

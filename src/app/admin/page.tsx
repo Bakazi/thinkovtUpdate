@@ -1017,7 +1017,15 @@ export default function AdminDashboard() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {configs
-                .filter((c) => ['AI_PROVIDER', 'GROQ_API_KEY', 'OLLAMA_BASE_URL', 'MODEL_NAME'].includes(c.key))
+                .filter((c) => [
+                  'AI_PROVIDER',
+                  'GEMINI_API_KEYS',
+                  'GEMINI_MODEL',
+                  'GROQ_API_KEYS',
+                  'GROQ_MODEL',
+                  'OLLAMA_BASE_URL',
+                  'OLLAMA_MODEL',
+                ].includes(c.key))
                 .map((config) => (
                   <div key={config.key} style={{
                     border: `1px solid ${BORDER}`,
@@ -1038,7 +1046,7 @@ export default function AdminDashboard() {
                     <div style={{ display: 'flex', gap: 12 }}>
                       {config.key === 'AI_PROVIDER' ? (
                         <select
-                          value={editConfigs[config.key] || 'BUILTIN'}
+                          value={editConfigs[config.key] || 'AUTO'}
                           onChange={(e) => setEditConfigs((prev) => ({ ...prev, [config.key]: e.target.value }))}
                           style={{
                             flex: 1,
@@ -1051,6 +1059,8 @@ export default function AdminDashboard() {
                             outline: 'none',
                           }}
                         >
+                          <option value="AUTO">AUTO (Gemini → Groq → Ollama)</option>
+                          <option value="GEMINI">GEMINI</option>
                           <option value="BUILTIN">BUILTIN</option>
                           <option value="GROQ">GROQ</option>
                           <option value="OLLAMA">OLLAMA</option>
@@ -1071,9 +1081,12 @@ export default function AdminDashboard() {
                             outline: 'none',
                           }}
                           placeholder={
-                            config.key === 'GROQ_API_KEY' ? 'gsk_...' :
+                            config.key === 'GEMINI_API_KEYS' ? 'AIza... (comma-separated keys supported)' :
+                            config.key === 'GROQ_API_KEYS' ? 'gsk_... (comma-separated keys supported)' :
                             config.key === 'OLLAMA_BASE_URL' ? 'http://localhost:11434' :
-                            'llama-3.3-70b-versatile'
+                            config.key === 'GEMINI_MODEL' ? 'gemini-1.5-flash' :
+                            config.key === 'GROQ_MODEL' ? 'llama-3.3-70b-versatile' :
+                            'llama3'
                           }
                         />
                       )}
@@ -1095,10 +1108,13 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                     <p style={{ fontFamily: FONT_MONO, fontSize: '0.45rem', color: DIM, marginTop: 6, letterSpacing: '0.05em' }}>
-                      {config.key === 'AI_PROVIDER' ? 'Select which AI backend to use (BUILTIN / GROQ / OLLAMA).' :
-                       config.key === 'GROQ_API_KEY' ? 'Groq provider key. Get one at console.groq.com' :
-                       config.key === 'OLLAMA_BASE_URL' ? 'Local AI fallback. Ensure Ollama is running' :
-                       'Optional: Override the default model name'}
+                      {config.key === 'AI_PROVIDER' ? 'AUTO will try Gemini first, then Groq, then Ollama.' :
+                       config.key === 'GEMINI_API_KEYS' ? 'Gemini keys (free tier possible). Paste multiple keys separated by commas/newlines for failover.' :
+                       config.key === 'GEMINI_MODEL' ? 'Gemini model id (e.g. gemini-1.5-flash).' :
+                       config.key === 'GROQ_API_KEYS' ? 'Groq keys. Paste multiple keys separated by commas/newlines for failover.' :
+                       config.key === 'GROQ_MODEL' ? 'Groq model id (e.g. llama-3.3-70b-versatile).' :
+                       config.key === 'OLLAMA_BASE_URL' ? 'Local model server (Ollama). Not reachable from Vercel unless hosted publicly.' :
+                       'Ollama model name (e.g. llama3, mistral).'}
                     </p>
                   </div>
                 ))}
