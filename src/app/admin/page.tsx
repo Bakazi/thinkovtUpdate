@@ -1190,7 +1190,7 @@ export default function AdminDashboard() {
                             config.key === 'SMTP_PORT' ? '587' :
                             config.key === 'SMTP_USER' ? 'alerts@yourdomain.com' :
                             config.key === 'SMTP_PASS' ? '(password)' :
-                            config.key === 'SMTP_FROM' ? '"Verum Engine" <alerts@yourdomain.com>' :
+                            config.key === 'SMTP_FROM' ? '"Thinkovr Verum Engine" <alerts@yourdomain.com>' :
                             config.key === 'GEMINI_API_KEYS' ? 'AIza... (comma-separated keys supported)' :
                             config.key === 'GROQ_API_KEYS' ? 'gsk_... (comma-separated keys supported)' :
                             config.key === 'OLLAMA_BASE_URL' ? 'http://localhost:11434' :

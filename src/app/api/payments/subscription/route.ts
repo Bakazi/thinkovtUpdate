@@ -119,7 +119,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({
       quote,
-      message: 'Request received. Verum will review and respond with an approval or denial.',
+      message: 'Request received. The Thinkovr Verum Engine will review and respond with an approval or denial.',
     }, { status: 202 });
   } catch (error: unknown) {
     console.error('Update subscription error:', error);
