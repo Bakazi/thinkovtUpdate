@@ -15,39 +15,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden — Admin only' }, { status: 403 });
     }
 
-    let configs = await db.aIConfig.findMany({
+    // Ensure default config rows exist (Vercel deploys won't run local seed scripts).
+    // We always backfill missing keys, but never overwrite existing values.
+    const defaults: Array<{ key: string; value: string }> = [
+      { key: 'AI_PROVIDER', value: 'AUTO' },
+      // Gemini (default in AUTO)
+      { key: 'GEMINI_API_KEYS', value: '' },
+      { key: 'GEMINI_MODEL', value: 'gemini-1.5-flash' },
+      // Groq fallback
+      { key: 'GROQ_API_KEYS', value: '' },
+      { key: 'GROQ_MODEL', value: 'llama-3.3-70b-versatile' },
+      // Local fallback
+      { key: 'OLLAMA_BASE_URL', value: 'http://localhost:11434' },
+      { key: 'OLLAMA_MODEL', value: 'llama3' },
+      // Legacy keys (backward compat)
+      { key: 'GROQ_API_KEY', value: '' },
+      { key: 'MODEL_NAME', value: '' },
+      { key: 'PAYMENT_MODE', value: 'SUBSCRIPTION' },
+      { key: 'PAYFAST_MERCHANT_ID', value: '' },
+      { key: 'PAYFAST_MERCHANT_KEY', value: '' },
+      { key: 'PAYFAST_PASSPHRASE', value: '' },
+      { key: 'PAYFAST_BASE_URL', value: 'https://sandbox.payfast.co.za' },
+      { key: 'BLUEPRINT_PRICE_PER', value: '97' },
+      { key: 'PAYPAL_CLIENT_ID', value: '' },
+      { key: 'PAYPAL_SECRET', value: '' },
+    ];
+
+    await db.aIConfig.createMany({ data: defaults, skipDuplicates: true });
+
+    const configs = await db.aIConfig.findMany({
       orderBy: { key: 'asc' },
     });
-
-    // Ensure default config rows exist (Vercel deploys won't run local seed scripts).
-    if (configs.length === 0) {
-      const defaults: Array<{ key: string; value: string }> = [
-        { key: 'AI_PROVIDER', value: 'AUTO' },
-        // Gemini (default in AUTO)
-        { key: 'GEMINI_API_KEYS', value: '' },
-        { key: 'GEMINI_MODEL', value: 'gemini-1.5-flash' },
-        // Groq fallback
-        { key: 'GROQ_API_KEYS', value: '' },
-        { key: 'GROQ_MODEL', value: 'llama-3.3-70b-versatile' },
-        // Local fallback
-        { key: 'OLLAMA_BASE_URL', value: 'http://localhost:11434' },
-        { key: 'OLLAMA_MODEL', value: 'llama3' },
-        // Legacy keys (backward compat)
-        { key: 'GROQ_API_KEY', value: '' },
-        { key: 'MODEL_NAME', value: '' },
-        { key: 'PAYMENT_MODE', value: 'SUBSCRIPTION' },
-        { key: 'PAYFAST_MERCHANT_ID', value: '' },
-        { key: 'PAYFAST_MERCHANT_KEY', value: '' },
-        { key: 'PAYFAST_PASSPHRASE', value: '' },
-        { key: 'PAYFAST_BASE_URL', value: 'https://sandbox.payfast.co.za' },
-        { key: 'BLUEPRINT_PRICE_PER', value: '97' },
-        { key: 'PAYPAL_CLIENT_ID', value: '' },
-        { key: 'PAYPAL_SECRET', value: '' },
-      ];
-
-      await db.aIConfig.createMany({ data: defaults, skipDuplicates: true });
-      configs = await db.aIConfig.findMany({ orderBy: { key: 'asc' } });
-    }
 
     return NextResponse.json({ configs });
   } catch (error: unknown) {
