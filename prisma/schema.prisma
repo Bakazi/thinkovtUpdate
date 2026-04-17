@@ -22,6 +22,7 @@ model User {
   auditSubmissions AuditSubmission[]
   subscription  Subscription?
   payments      Payment[]
+  tierChangeQuotes  TierChangeQuote[]
 }
 
 model Post {
