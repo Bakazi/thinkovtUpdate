@@ -87,6 +87,10 @@ model PaymentTier {
   name          String   @unique
   slug          String   @unique
 
+  // Legacy fields (kept for migration compatibility)
+  price         Decimal?
+  currency      String?
+
   // Payment Options: Budget | One Payment | Tiered
   budgetPrice       Decimal?
   onePaymentPrice   Decimal?
