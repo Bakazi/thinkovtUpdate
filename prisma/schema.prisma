@@ -79,6 +79,7 @@ model AIConfig {
   id            String   @id @default(cuid())
   key           String   @unique
   value         String
+  provider      String?  @default("groq")
   updatedAt     DateTime @updatedAt
 }
 
