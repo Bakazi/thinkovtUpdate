@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AuctionCard } from '@/components/auctions/AuctionCard'
+import AuctionCard from '@/components/auctions/AuctionCard'
 
 interface Auction {
   id: string
