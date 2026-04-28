@@ -1,46 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
-      if (result?.error) {
-        setError('Invalid email or password');
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to send reset link');
         return;
       }
 
-      // Fetch session to get role
-      const res = await fetch('/api/auth/session');
-      const session = await res.json();
-      const role = session?.user?.role;
-
-      if (role === 'ADMIN' || role === 'STAFF') {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
+      setSuccess(data.message || 'Password reset instructions sent to your email.');
+      
+      // In development, show the reset URL
+      if (data.resetUrl) {
+        console.log('Reset URL:', data.resetUrl);
       }
     } catch {
-      setError('An error occurred during login');
+      setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -109,11 +105,22 @@ export default function LoginPage() {
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
             color: '#F0EAD6',
-            marginBottom: 32,
+            marginBottom: 16,
             textAlign: 'center',
           }}>
-            Sign In
+            Reset Password
           </h2>
+
+          <p style={{
+            fontFamily: 'var(--font-cormorant)',
+            fontSize: '0.9rem',
+            color: '#BDB49A',
+            textAlign: 'center',
+            marginBottom: 32,
+            lineHeight: 1.6,
+          }}>
+            Enter your email address and we will send you instructions to reset your password.
+          </p>
 
           {error && (
             <div style={{
@@ -130,8 +137,23 @@ export default function LoginPage() {
             </div>
           )}
 
+          {success && (
+            <div style={{
+              padding: '12px 16px',
+              marginBottom: 20,
+              background: 'rgba(39,174,96,0.1)',
+              border: '1px solid rgba(39,174,96,0.2)',
+              fontFamily: 'var(--font-courier), monospace',
+              fontSize: '0.72rem',
+              color: '#27AE60',
+              letterSpacing: '0.05em',
+            }}>
+              {success}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 32 }}>
               <label style={{
                 display: 'block',
                 fontFamily: 'var(--font-courier), monospace',
@@ -166,74 +188,24 @@ export default function LoginPage() {
               />
             </div>
 
-            <div style={{ marginBottom: 32 }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 8,
-              }}>
-                <label style={{
-                  fontFamily: 'var(--font-courier), monospace',
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.2em',
-                  color: '#C9A84C',
-                  textTransform: 'uppercase',
-                }}>
-                  Password
-                </label>
-                <Link href="/forgot-password" style={{
-                  fontFamily: 'var(--font-courier), monospace',
-                  fontSize: '0.55rem',
-                  letterSpacing: '0.1em',
-                  color: '#7A6228',
-                  textDecoration: 'none',
-                  textTransform: 'uppercase',
-                }}>
-                  Forgot Password?
-                </Link>
-              </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                style={{
-                  width: '100%',
-                  background: 'rgba(240,234,214,0.04)',
-                  border: '1px solid rgba(201,168,76,0.18)',
-                  color: '#F0EAD6',
-                  padding: '14px 16px',
-                  fontFamily: 'var(--font-cormorant), Georgia, serif',
-                  fontSize: '0.95rem',
-                  outline: 'none',
-                  transition: 'border-color 0.3s',
-                }}
-                onFocus={(e) => (e.target.style.borderColor = '#C9A84C')}
-                onBlur={(e) => (e.target.style.borderColor = 'rgba(201,168,76,0.18)')}
-                placeholder="Enter your password"
-              />
-            </div>
-
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || success !== ''}
               style={{
                 width: '100%',
                 padding: '16px',
-                background: loading ? '#7A6228' : '#C9A84C',
+                background: loading || success ? '#7A6228' : '#C9A84C',
                 color: '#080810',
                 border: 'none',
                 fontFamily: 'var(--font-courier), monospace',
                 fontSize: '0.65rem',
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loading || success ? 'not-allowed' : 'pointer',
                 transition: 'background 0.3s, transform 0.2s',
               }}
             >
-              {loading ? 'Authenticating...' : 'Sign In'}
+              {loading ? 'Sending...' : success ? 'Sent!' : 'Send Reset Link'}
             </button>
           </form>
 
@@ -247,13 +219,13 @@ export default function LoginPage() {
               letterSpacing: '0.1em',
               color: '#BDB49A',
             }}>
-              No account?{' '}
-              <Link href="/register" style={{
+              Remember your password?{' '}
+              <Link href="/login" style={{
                 color: '#C9A84C',
                 textDecoration: 'none',
                 textTransform: 'uppercase',
               }}>
-                Register
+                Sign In
               </Link>
             </p>
           </div>

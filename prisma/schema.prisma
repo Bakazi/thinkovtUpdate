@@ -18,11 +18,21 @@ model User {
   role          String   @default("USER")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  // Goldprint Gate System
+  goldprintQuota        Int      @default(0)
+  goldprintQuotaResetAt DateTime?
+  totalBlueprintsPurchased Int @default(0)
+  maxGoldprintsAllowed  Int      @default(40)
+
   blueprints         Blueprint[]
   auditSubmissions   AuditSubmission[]
   subscription       Subscription?
   payments           Payment[]
   tierChangeQuotes   TierChangeQuote[]
+  passwordResetTokens PasswordResetToken[]
+  goldprintRequests  GoldprintRequest[]
+  goldprints         Goldprint[]
 }
 
 model Post {
@@ -76,8 +86,17 @@ model PaymentTier {
   id            String   @id @default(cuid())
   name          String   @unique
   slug          String   @unique
-  price         Decimal  @default(0)
-  currency      String   @default("ZAR")
+
+  // Payment Options: Budget | One Payment | Tiered
+  budgetPrice       Decimal?
+  onePaymentPrice   Decimal?
+  tieredBasePrice   Decimal?
+  tieredMaxPrice    Decimal?
+
+  // Currency Support
+  baseCurrency      String   @default("ZAR")
+  supportedCurrencies String @default("[\"ZAR\",\"USD\",\"EUR\",\"GBP\"]")
+
   maxBlueprints Int      @default(1)
   features      String   @default("[]")
   isActive      Boolean  @default(true)
@@ -109,15 +128,148 @@ model Payment {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   blueprintId   String?  @unique
   blueprint     Blueprint? @relation(fields: [blueprintId], references: [id], onDelete: SetNull)
+
+  // Payment Options
+  selectedOption String  @default("ONE_PAYMENT")
   amount        Decimal
+  originalAmount Decimal?
   currency      String   @default("ZAR")
+  exchangeRate  Decimal  @default(1)
+
   method        String   @default("PAYFAST")
   status        String   @default("PENDING")
   reference     String?
   payfastToken  String?
   description   String?
+
+  // Unlocks goldprint gate
+  unlocksGoldprints Boolean @default(false)
+  goldprintsUnlocked Int    @default(0)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// ===== GOLDPRINT SYSTEM =====
+
+model GoldprintRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @db.Text
+  status      String   @default("PENDING")
+
+  // AI Engine Decision
+  aiDecision  String?
+  aiReasoning String?  @db.Text
+  aiReviewedAt DateTime?
+
+  // Auction Queue
+  isAuctionEligible Boolean @default(false)
+  isForAuction    Boolean @default(false)
+  auctionListedAt DateTime?
+
+  adminNotes  String?  @db.Text
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([isAuctionEligible])
+}
+
+model Goldprint {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  content     String   @db.Text
+  source      String   @default("APPROVED")
+  auctionId   String?
+
+  // Dashboard Display Only
+  isReady     Boolean  @default(false)
+  readyAt     DateTime?
+  viewedAt    DateTime?
+
+  // Automation
+  deliveryMethod   String   @default("IMMEDIATE")
+  scheduledReadyAt DateTime?
+  bulkGroupId     String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isReady])
+  @@index([scheduledReadyAt])
+}
+
+// ===== AUCTION MODELS =====
+
+model Auction {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  status      String   @default("SCHEDULED")
+  startTime   DateTime?
+  endTime     DateTime?
+  startingBid Decimal  @default(0)
+  bidIncrement Decimal @default(10)
+  winnerId    String?
+  winningBid  Decimal?
+
+  // Admin Controls
+  createdBy   String?
+  alertTimingMinutes Int @default(10)
+  customAlertMessage String? @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bids        Bid[]
+  greyprint   Greyprint?
+  @@index([status])
+  @@index([startTime])
+}
+
+model Bid {
+  id          String   @id @default(cuid())
+  auctionId   String
+  auction     Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  userId      String
+  amount      Decimal
+  createdAt   DateTime @default(now())
+
+  @@index([auctionId])
+  @@index([userId])
+}
+
+model Greyprint {
+  id          String   @id @default(cuid())
+  auctionId   String   @unique
+  auction     Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  reason      String   @default("NO_SHOW")
+  details     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [email], references: [email], onDelete: Cascade)
+  
+  @@index([email])
+  @@index([token])
 }
 
 model AgentPrompt {
