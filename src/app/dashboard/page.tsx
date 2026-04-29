@@ -380,36 +380,56 @@ export default function UserDashboard() {
             { href: '#submit', label: 'Submit Idea', onClick: undefined },
             { href: '#blueprints', label: 'My Blueprints', onClick: undefined },
             { href: '#subscription', label: 'Subscription', onClick: scrollToSubscription },
-          ].map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={(e) => {
-                if (link.onClick) {
-                  e.preventDefault();
-                  link.onClick();
-                }
-              }}
-              style={{
-                display: 'block', padding: '13px 16px', fontFamily: 'var(--font-mono)',
-                fontSize: 10, letterSpacing: '0.16em', color: COLORS.muted,
-                textTransform: 'uppercase', textDecoration: 'none',
-                borderLeft: '2px solid transparent', transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
+            { href: '/auctions', label: 'Live Auctions', onClick: undefined, external: true },
+            { href: '/goldprints', label: 'My Goldprints', onClick: undefined, external: true },
+          ].map((link) => {
+            const navStyle = {
+              display: 'block', padding: '13px 16px', fontFamily: 'var(--font-mono)',
+              fontSize: 10, letterSpacing: '0.16em', color: COLORS.muted,
+              textTransform: 'uppercase', textDecoration: 'none',
+              borderLeft: '2px solid transparent', transition: 'all 0.2s',
+            };
+            const hoverProps = {
+              onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
                 e.currentTarget.style.color = COLORS.gold;
-                e.currentTarget.style.borderLeftColor = COLORS.gold;
-                e.currentTarget.style.background = 'rgba(201,168,76,0.04)';
-              }}
-              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderLeftColor = COLORS.gold;
+                (e.currentTarget as HTMLElement).style.background = 'rgba(201,168,76,0.04)';
+              },
+              onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
                 e.currentTarget.style.color = COLORS.muted;
-                e.currentTarget.style.borderLeftColor = 'transparent';
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              {link.label}
-            </a>
-          ))}
+                (e.currentTarget as HTMLElement).style.borderLeftColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.background = 'transparent';
+              },
+            };
+            if (link.external) {
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  style={navStyle}
+                  {...hoverProps}
+                >
+                  {link.label}
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={(e) => {
+                  if (link.onClick) {
+                    e.preventDefault();
+                    link.onClick();
+                  }
+                }}
+                style={navStyle}
+                {...hoverProps}
+              >
+                {link.label}
+              </a>
+            );
+          })}
         </nav>
 
         {/* User + Logout */}
