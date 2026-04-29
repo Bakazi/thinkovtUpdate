@@ -1,13 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
   // Allow the site to be accessed through reverse proxy preview URLs
-  // This prevents CORS and origin mismatches when behind Caddy
   allowedDevOrigins: [
     "https://preview-chat-*.space.z.ai",
   ],
@@ -20,6 +18,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Vercel serverless function configuration
+  serverExternalPackages: ['@prisma/client', 'bcryptjs'],
 };
 
 export default nextConfig;
